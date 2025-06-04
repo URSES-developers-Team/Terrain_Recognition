@@ -1,0 +1,8 @@
+.DS_Store
+._*
+data/models
+data/dataset/tiled_images
+data/dataset/train_images/*
+!data/dataset/train_images/5.tif 
+!data/dataset/train_images/8.tif 
+!data/dataset/train_images/10.tif

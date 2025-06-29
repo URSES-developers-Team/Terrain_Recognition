@@ -1,7 +1,18 @@
 # Use official PyTorch image with CUDA
 FROM pytorch/pytorch:2.7.0-cuda11.8-cudnn9-runtime
+
 # Set working directory
 WORKDIR /workspace
+
+# Install system dependencies for OpenCV and ultralytics
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
 COPY requirements.txt .

@@ -9,7 +9,8 @@ from models import get_model
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default=MODEL_NAME, choices=["fasterrcnn", "fasterrcnn_elu"])
+    parser.add_argument("--model", type=str, default=MODEL_NAME, 
+                       choices=["fasterrcnn", "fasterrcnn_elu", "fasterrcnn_ultimate"])
     args = parser.parse_args()
     model_name = args.model
 
@@ -21,8 +22,8 @@ def main():
     df, class_mapping = preprocessing.remap_class_ids(df)
     df = preprocessing.filter_images_with_annotations(df, TRAIN_IMAGES_DIR)
     # For testing: limit to 3 images
-    # unique_images = df["image_id"].unique()[:3]
-    # df = df[df["image_id"].isin(unique_images)].copy()
+    unique_images = df["image_id"].unique()[:3]
+    df = df[df["image_id"].isin(unique_images)].copy()
 
     tiled_df = preprocessing.tile_dataset(df, TRAIN_IMAGES_DIR, N_TILES, TILED_IMAGES_DIR)
     df_train, df_val = preprocessing.split_train_val(tiled_df, test_size=VAL_SPLIT, random_state=RANDOM_SEED)
@@ -65,7 +66,17 @@ def main():
             optimizer.zero_grad()
             loss_dict = model(images, targets)
             total_loss = sum(loss_dict.values())
+            
+            # Check for NaN/Inf in loss before backward pass
+            if torch.isnan(total_loss) or torch.isinf(total_loss):
+                print(f"Warning: NaN/Inf loss detected, skipping batch. Loss: {total_loss}")
+                continue
+                
             total_loss.backward()
+            
+            # Gradient clipping to prevent exploding gradients
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+            
             optimizer.step()
             epoch_loss += total_loss.item()
         avg_train_loss = epoch_loss / len(train_loader)

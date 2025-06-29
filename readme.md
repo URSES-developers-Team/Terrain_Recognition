@@ -56,7 +56,7 @@ Terrarian Recognition is a modular, reproducible object detection pipeline train
 ### It is strongly recommended to train on a cloud service (e.g. AWS), as the model is too large. However, you can use your own computer; although I won't explain how, just run `train.py`.
 Build and run the container:
 ```sh
-docker build -t terrarian_recognition .
+docker build -t terrain_recognition .
 docker run --gpus all --shm-size=4g -it terrarian_recognition
 ```
 
@@ -71,16 +71,18 @@ docker run --gpus all --shm-size=4g -it terrarian_recognition
 ## Model Architectures
 - **Faster R-CNN**: Standard PyTorch implementation
 - **Faster R-CNN + ELU + Focal Loss**: Custom variant for improved performance on imbalanced data
+- **Faster R-CNN + ELU + FL + tuned for satelite imagery**: Custom model acrhitecture
 - Select model via CLI (`--model`) or `.env` (`MODEL_NAME`), model names are `fasterrcnn` and `fasterrcnn_elu`.
 
 #### Example usage
+
 ```
-# using CLI
+# Faster R-CNN
 python src/train.py # fasterrcnn is the default
 python src/train.py --model fasterrcnn_elu 
+python src/train.py --model fasterrcnn_ultimate
 
-# or change environment variable
-MODEL_NAME=fasterrcnn_elu python src/train.py
+# Yolo
 ```
 ---
 

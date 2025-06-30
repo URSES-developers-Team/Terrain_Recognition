@@ -1,0 +1,8 @@
+.DS_Store
+data/models
+data/dataset/tiled_images
+data/dataset/train_images/*
+__pycache__
+data/output
+runs
+yolo_dataset

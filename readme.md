@@ -45,8 +45,13 @@ Terrarian Recognition is a modular, reproducible object detection pipeline train
 │   │   └── dataset.py
 │   └── models/
 │       ├── __init__.py
-│       ├── fasterrcnn.py
-│       └── fasterrcnn_elu.py
+│       ├── faster_rcnn
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   └── enhanced.py
+│       └── yolo
+            ├── __init__.py
+            └── yolo.py 
 ```
 
 ---
@@ -57,7 +62,7 @@ Terrarian Recognition is a modular, reproducible object detection pipeline train
 Build and run the container:
 ```sh
 docker build -t terrain_recognition .
-docker run --gpus all --shm-size=4g -it terrarian_recognition
+docker run --gpus all --shm-size=<int>g -it terrarian_recognition 
 ```
 
 ---
@@ -83,6 +88,9 @@ python src/train.py --model fasterrcnn_elu
 python src/train.py --model fasterrcnn_ultimate
 
 # Yolo
+python src/train_yolo.py --model-size {n, s, m, l, x} --enhanced # --enhanced uses enhanced model for satellite imagery
+# for more optional tags, write 
+python src/train_yolo -h # or --help
 ```
 ---
 
@@ -97,7 +105,7 @@ python src/evaluate.py --models <model1> <model2>
 ### Inference
  To run **Inference** run `inference.py`:
 - `--input` (required): Path to an image or directory of images.
-- `--model` (optional): Model name (`fasterrcnn` or `fasterrcnn_elu`). Defaults to the value in `.env` or `fasterrcnn`.
+- `--model` (optional): Model name. Defaults to the value in `.env` or `fasterrcnn`(base model).
 - `--output` (optional): Output directory for annotated images. Defaults to `data/output`.
 - `--score-threshold` (optional): Minimum score for displaying detections (default: 0.3).
 Example usage:

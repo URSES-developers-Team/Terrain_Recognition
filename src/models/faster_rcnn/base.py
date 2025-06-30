@@ -15,10 +15,6 @@ class FasterRCNN:
         model.roi_heads.box_predictor = models.detection.faster_rcnn.FastRCNNPredictor(
             in_features, num_classes
         )
-        
-        # CRITICAL FIX: Adjust thresholds for satellite imagery
-        # Default score_thresh=0.05 is too high for small objects
-        # Default nms_thresh=0.5 is too high for dense scenes
         model.roi_heads.score_thresh = 0.01  # Lower confidence threshold
         model.roi_heads.nms_thresh = 0.3     # Lower NMS threshold
         

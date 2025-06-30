@@ -10,7 +10,7 @@ from models import get_model
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default=MODEL_NAME, 
-                       choices=["fasterrcnn", "fasterrcnn_elu", "fasterrcnn_ultimate"])
+                       choices=["base", "enhanced"])
     args = parser.parse_args()
     model_name = args.model
 

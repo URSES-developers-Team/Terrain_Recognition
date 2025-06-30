@@ -1,11 +1,3 @@
-"""
-FasterRCNN Ultimate: Combines satellite imagery optimizations with class imbalance handling
-- Satellite imagery optimizations (Advanced)
-- ELU activations for better gradient flow
-- Focal Loss for class imbalance
-- Optimized for xView dataset characteristics
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,6 +5,11 @@ from torchvision import models
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.roi_heads import RoIHeads
+import sys
+import os
+
+# Add the src directory to the path to find config
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config import *
 
 
@@ -52,13 +49,13 @@ class FocalLoss(nn.Module):
         # Compute pt (probability of true class)
         pt = torch.exp(-ce_loss)
         
-        # Enhanced prevention of pt being exactly 1.0 to avoid NaN in (1-pt)^gamma
+        # Prevention of pt being exactly 1.0 to avoid NaN in (1-pt)^gamma
         pt = torch.clamp(pt, min=1e-8, max=1.0 - 1e-8)
         
         # Apply focal loss formula: alpha * (1-pt)^gamma * CE_loss
         focal_loss = self.alpha * (1.0 - pt) ** self.gamma * ce_loss
         
-        # Enhanced NaN/Inf handling - replace with zeros and add debugging
+        # NaN/Inf handling - replace with zeros and add debugging
         if torch.isnan(focal_loss).any() or torch.isinf(focal_loss).any():
             print("Warning: NaN/Inf detected in focal_loss computation")
             print(f"  Input range: [{inputs.min():.6f}, {inputs.max():.6f}]")
@@ -107,7 +104,7 @@ class RoIHeadsWithFocalLoss(RoIHeads):
         else:
             labels_pos = labels[sampled_pos_inds_subset]
             
-            # Enhanced box regression handling with proper indexing
+            # box regression handling with proper indexing
             # box_regression is [N, num_classes*4], need to get the right 4 values for each positive sample
             num_classes = box_regression.shape[1] // 4
             box_regression_pos = box_regression[sampled_pos_inds_subset]
@@ -130,10 +127,10 @@ class RoIHeadsWithFocalLoss(RoIHeads):
                 beta=1.0 / 9,
                 reduction='sum'
             )
-            # Enhanced normalization: Divide by number of positive samples, not total labels
+            # Normalization: Divide by number of positive samples, not total labels
             box_loss = box_loss / max(1, len(sampled_pos_inds_subset))
 
-        # Enhanced final validation - check for NaN/Inf values in losses and replace with finite values
+        # Final validation - check for NaN/Inf values in losses and replace with finite values
         if torch.isnan(classification_loss) or torch.isinf(classification_loss):
             print("Warning: NaN/Inf in classification_loss, replacing with 0.0")
             classification_loss = torch.tensor(0.0, device=class_logits.device, requires_grad=True)
@@ -145,21 +142,15 @@ class RoIHeadsWithFocalLoss(RoIHeads):
         return classification_loss, box_loss
 
 
-class FasterRCNN_Ultimate:
+class FasterRCNN_Enhanced:
     """
     Ultimate FasterRCNN combining all optimizations for satellite imagery:
     
-    1. COCO Pretraining - Proven feature extraction capabilities
+    1. COCO Pretraining 
     2. ELU Activations - Better gradient flow, smoother learning
     3. Focal Loss - Handles severe class imbalance in satellite imagery
     4. Satellite Optimizations - Anchor sizes, thresholds, detection counts
     5. Robust Training - Gradient clipping, numerical stability
-    
-    This is the best model for xView dataset characteristics:
-    - Small objects (vehicles, buildings)
-    - Dense scenes (hundreds of objects per image)
-    - Class imbalance (many background pixels, few object pixels)
-    - High resolution satellite imagery
     """
     
     def __init__(self, num_classes):
@@ -272,7 +263,7 @@ def validate_model_stability():
     Comprehensive validation of model stability and NaN resistance
     Tests the model with edge cases that commonly cause NaN issues
     """
-    print("🔧 Testing FasterRCNN_Ultimate stability...")
+    print("🔧 Testing FasterRCNN_Enhanced stability...")
     
     try:
         import torch
@@ -348,7 +339,7 @@ def get_enhanced_training_recommendations():
 
 if __name__ == "__main__":
     # Comprehensive testing of the Ultimate model
-    print("Testing FasterRCNN_Ultimate")
+    print("Testing FasterRCNN_Enhanced")
     print("=" * 50)
     
     # Test stability first
@@ -356,7 +347,7 @@ if __name__ == "__main__":
     
     if stability_ok:
         print("\n📦 Creating model...")
-        model_creator = FasterRCNN_Ultimate(num_classes=61)  # xView has 60 classes + background
+        model_creator = FasterRCNN_Enhanced(num_classes=61)  # xView has 60 classes + background
         model = model_creator.get_model()
         
         print(f"✅ Model created successfully!")

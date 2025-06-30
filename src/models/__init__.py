@@ -1,12 +1,61 @@
+import sys
+import os
+
+from . import yolo
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from config import *
-from . import fasterrcnn, fasterrcnn_elu
+from .faster_rcnn import base, enhanced
 
 def get_model(model_name, num_classes):
-    if model_name == "fasterrcnn_elu":
-        return fasterrcnn_elu.FasterRCNN_ELU(num_classes).get_model(
-            num_classes=num_classes,
+    """
+    Model factory for programmatic model creation.
+    
+    Note: For CLI training, use train_yolo.py or train.py directly.
+    This factory is for inference, evaluation, and testing scripts.
+    
+    Supported model names:
+    
+    FasterRCNN:
+    - "base": Standard FasterRCNN
+    - "enhanced": FasterRCNN with satellite optimizations
+    
+    YOLO:
+    - "yolo", "yolov8": YOLOv8 nano
+    - "yolo_enhanced", "yolov8_enhanced": Enhanced YOLOv8 nano  
+    - "yolo_<size>": YOLOv8 with size (n/s/m/l/x)
+    - "yolo_enhanced_<size>": Enhanced YOLOv8 with size
+    """
+    # FasterRCNN models
+    if model_name == "enhanced":
+        return enhanced.FasterRCNN_Enhanced(num_classes).get_model(
             alpha=FOCAL_ALPHA,
             gamma=FOCAL_GAMMA,
             elu_alpha=ELU_ALPHA
         )
-    return fasterrcnn.FasterRCNN(num_classes).get_model()
+    elif model_name == "base":
+        return base.FasterRCNN(num_classes).get_model()
+    
+    # YOLO models
+    elif model_name == "yolo" or model_name == "yolov8":
+        return yolo.YOLOv8(num_classes).get_model()
+    elif model_name == "yolo_enhanced" or model_name == "yolov8_enhanced":
+        return yolo.YOLOv8Enhanced(num_classes, model_size='n', satellite_optimized=True).get_model()
+    elif model_name.startswith("yolo_") or model_name.startswith("yolov8_"):
+        parts = model_name.split("_")
+        
+        if "enhanced" in parts:
+            # Enhanced YOLO with size: yolo_enhanced_s, yolov8_enhanced_m, etc.
+            size_candidates = [p for p in parts if p in ['n', 's', 'm', 'l', 'x']]
+            size = size_candidates[0] if size_candidates else 'n'
+            return yolo.YOLOv8Enhanced(num_classes, model_size=size, satellite_optimized=True).get_model()
+        else:
+            # Regular YOLO with size: yolo_s, yolov8_m, etc.
+            size = parts[-1]
+            if size in ['n', 's', 'm', 'l', 'x']:
+                return yolo.YOLOv8(num_classes, model_size=size).get_model()
+            else:
+                return yolo.YOLOv8(num_classes).get_model()
+    
+    # Default fallback
+    return base.FasterRCNN(num_classes).get_model()

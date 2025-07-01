@@ -74,10 +74,13 @@ docker run --gpus all --shm-size=<int>g -it terrarian_recognition
 ---
 
 ## Model Architectures
-- **Faster R-CNN**: Standard PyTorch implementation
-- **Faster R-CNN + ELU + Focal Loss**: Custom variant for improved performance on imbalanced data
-- **Faster R-CNN + ELU + FL + tuned for satelite imagery**: Custom model acrhitecture
-- Select model via CLI (`--model`) or `.env` (`MODEL_NAME`), model names are `fasterrcnn` and `fasterrcnn_elu`.
+- **Base**: Faster R-CNN Standard PyTorch implementation
+- **Enhanced** **Faster R-CNN + ELU + Focal Loss**: Custom variant for improved performance on imbalanced data
+- **Ultimate**: Faster R-CNN + ELU + Class-Balanced FL + Attention mechanism + enhanced FPN with cross-scale feature fusion
+- **Yolo**: base YOLO model and Enhanced: customized for better satellite imagery
+
+To train Faster-RCNN models, use `train.py` with `--model` tag as shown below
+To train YOLO models, use `train_yolo.py`. To see optionals tags, run `python src/train_yolo.py --help # or -h`
 
 #### Example usage
 

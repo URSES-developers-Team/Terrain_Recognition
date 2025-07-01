@@ -80,19 +80,19 @@ docker run --gpus all --shm-size=<int>g -it terrarian_recognition
 - **Yolo**: base YOLO model and Enhanced: customized for better satellite imagery
 
 To train Faster-RCNN models, use `train.py` with `--model` tag as shown below
-To train YOLO models, use `train_yolo.py`. To see optionals tags, run `python src/train_yolo.py --help # or -h`
+To train YOLO models, use `train_yolo.py`.
 
 #### Example usage
 
 ```
 # Faster R-CNN
-python src/train.py                  # Faster-RCNN, which is a base model, is the default
-python src/train.py --model enhanced # Faster-RCNN with Focal Loss and ELU activation functions (instead of ReLU)
-python src/train.py --model ultimate # Faster-RCNN with Class-Balanced Focal Loss, Attention mechanism, 
-                                     # Enhanced FPN with cross-scale feature fusion and ELU activation functions.
+python src/train.py                  # Faster-RCNN, which is a base model, is the default, but you can run --model base 
+python src/train.py --model enhanced
+python src/train.py --model ultimate 
+                                 
 
 # Yolo
-python src/train_yolo.py --model-size {n, s, m, l, x} --enhanced # --:enhanced uses enhanced model for satellite imagery
+python src/train_yolo.py --model-size {n, s, m, l, x} --enhanced 
 # for more optional tags, write 
 python src/train_yolo -h # or --help
 ```

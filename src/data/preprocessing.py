@@ -34,7 +34,7 @@ def load_xview_annotations(geojson_path: str) -> pd.DataFrame:
 
 def filter_invalid_boxes(df):
     """
-    Removes bounding boxes with non-pistive width or height.
+    Removes bounding boxes with non-positive width or height.
     """
     df = df.copy()
     df["width"] = df["x_max"] - df["x_min"]
@@ -77,7 +77,7 @@ def tile_image(image_path, bboxes_df, n_tiles, output_dir):
     Ny = int(math.ceil(n_tiles / Nx))
 
     tile_width = W // Nx
-    tile_height = W // Ny
+    tile_height = H // Ny 
 
     tiled_annotations = []
 

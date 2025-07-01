@@ -83,12 +83,13 @@ docker run --gpus all --shm-size=<int>g -it terrarian_recognition
 
 ```
 # Faster R-CNN
-python src/train.py # fasterrcnn is the default
-python src/train.py --model fasterrcnn_elu 
-python src/train.py --model fasterrcnn_ultimate
+python src/train.py                  # Faster-RCNN, which is a base model, is the default
+python src/train.py --model enhanced # Faster-RCNN with Focal Loss and ELU activation functions (instead of ReLU)
+python src/train.py --model ultimate # Faster-RCNN with Class-Balanced Focal Loss, Attention mechanism, 
+                                     # Enhanced FPN with cross-scale feature fusion and ELU activation functions.
 
 # Yolo
-python src/train_yolo.py --model-size {n, s, m, l, x} --enhanced # --enhanced uses enhanced model for satellite imagery
+python src/train_yolo.py --model-size {n, s, m, l, x} --enhanced # --:enhanced uses enhanced model for satellite imagery
 # for more optional tags, write 
 python src/train_yolo -h # or --help
 ```

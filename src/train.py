@@ -10,7 +10,7 @@ from models import get_model
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default=MODEL_NAME, 
-                       choices=["base", "enhanced"])
+                       choices=["base", "enhanced", "ultimate"])
     args = parser.parse_args()
     model_name = args.model
 
@@ -22,8 +22,8 @@ def main():
     df, class_mapping = preprocessing.remap_class_ids(df)
     df = preprocessing.filter_images_with_annotations(df, TRAIN_IMAGES_DIR)
     # For testing: limit to 3 images
-    unique_images = df["image_id"].unique()[:3]
-    df = df[df["image_id"].isin(unique_images)].copy()
+    # unique_images = df["image_id"].unique()[:3]
+    # df = df[df["image_id"].isin(unique_images)].copy()
 
     tiled_df = preprocessing.tile_dataset(df, TRAIN_IMAGES_DIR, N_TILES, TILED_IMAGES_DIR)
     df_train, df_val = preprocessing.split_train_val(tiled_df, test_size=VAL_SPLIT, random_state=RANDOM_SEED)
@@ -47,12 +47,53 @@ def main():
 
     # 3. Model
     num_classes = len(class_mapping) + 1
-    model = get_model(model_name, num_classes)
+    
+    # For ultimate model, we need to pass class_counts
+    if model_name == "ultimate":
+        # Compute class counts from the preprocessed data
+        class_counts = {}
+        for class_id in tiled_df["class_id"].unique():
+            class_counts[class_id] = len(tiled_df[tiled_df["class_id"] == class_id])
+        
+        print(f"📊 Class distribution computed:")
+        print(f"   Total classes: {len(class_counts)}")
+        print(f"   Most common: {max(class_counts.values())} samples")
+        print(f"   Least common: {min(class_counts.values())} samples")
+        print(f"   Imbalance ratio: {max(class_counts.values())/min(class_counts.values()):.1f}:1")
+        
+        # Import ultimate model directly to avoid preprocessing duplication
+        from models.faster_rcnn.ultimate import UltimateFasterRCNN
+        model = UltimateFasterRCNN(num_classes, class_counts, DEVICE)
+    else:
+        model = get_model(model_name, num_classes)
+    
     model.to(DEVICE)
 
     # 4. Optimizer
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=LEARNING_RATE, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
+    
+    # Use model-specific learning rate recommendations for ultimate model
+    if model_name == "ultimate":
+        recommendations = model.get_training_recommendations()
+        lr = recommendations['learning_rate']
+        wd = recommendations['weight_decay']
+        print(f"📚 Using Ultimate model recommendations: LR={lr}, WD={wd}")
+    else:
+        lr = LEARNING_RATE
+        wd = WEIGHT_DECAY
+        
+    optimizer = torch.optim.SGD(params, lr=lr, momentum=MOMENTUM, weight_decay=wd)
+    
+    # Add learning rate scheduler for ultimate model
+    scheduler = None
+    if model_name == "ultimate":
+        recommendations = model.get_training_recommendations()
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, 
+            step_size=recommendations['step_size'], 
+            gamma=recommendations['gamma']
+        )
+        print(f"📈 Added StepLR scheduler: step_size={recommendations['step_size']}, gamma={recommendations['gamma']}")
 
     # 5. Training loop
     train_losses, val_maps = [], []
@@ -94,6 +135,12 @@ def main():
         epoch_map = map_metric.compute()
         val_maps.append(float(epoch_map["map"]))
         print(f"[Epoch {epoch+1}] Train Loss: {avg_train_loss:.4f} | Val mAP: {val_maps[-1]:.4f}")
+        
+        # Step the scheduler
+        if scheduler is not None:
+            scheduler.step()
+            current_lr = scheduler.get_last_lr()[0]
+            print(f"   Learning Rate: {current_lr:.6f}")
 
     # 6. Save model
     model_dir = os.path.join(MODEL_SAVE_DIR, model_name)

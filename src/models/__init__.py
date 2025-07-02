@@ -1,11 +1,11 @@
 import sys
 import os
-
+from data import preprocessing
 from . import yolo
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import *
-from .faster_rcnn import base, enhanced
+from .faster_rcnn import base, enhanced, ultimate
 
 def get_model(model_name, num_classes):
     """
@@ -27,6 +27,15 @@ def get_model(model_name, num_classes):
     - "yolo_enhanced_<size>": Enhanced YOLOv8 with size
     """
     # FasterRCNN models
+    if model_name == "ultimate":
+        # Ultimate model should be created directly in train.py to avoid preprocessing duplication
+        # This path is for inference/evaluation scripts only
+        raise ValueError(
+            "Ultimate model requires class_counts parameter. "
+            "For training, use: python src/train.py --model ultimate. "
+            "For inference, import UltimateFasterRCNN directly and provide class_counts."
+        )
+    
     if model_name == "enhanced":
         return enhanced.FasterRCNN_Enhanced(num_classes).get_model(
             alpha=FOCAL_ALPHA,

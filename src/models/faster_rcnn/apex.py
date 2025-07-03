@@ -97,7 +97,7 @@ class DynamicAnchorGenerator(nn.Module):
             # Very large objects
             (384, 512, 768),
             # Extra large (rare but important)
-            (1024,)
+            (1024, 1024, 1024)
         ]
         return base_scales
     
@@ -771,6 +771,16 @@ class ApexFasterRCNN(nn.Module):
         self.dynamic_anchor_generator = DynamicAnchorGenerator(self.num_classes, self.class_counts)
         self.backbone_model.rpn.anchor_generator = self.dynamic_anchor_generator.anchor_generator
         print("   ✅ Dynamic anchor generation integrated")
+
+        # --- FIX: Rebuild RPN head to match anchor generator ---
+        num_anchors_list = self.backbone_model.rpn.anchor_generator.num_anchors_per_location()
+        if not all(n == num_anchors_list[0] for n in num_anchors_list):
+            raise ValueError(f"All FPN levels must have the same number of anchors per location, got {num_anchors_list}")
+        num_anchors = num_anchors_list[0]
+        in_channels = self.backbone_model.backbone.out_channels if hasattr(self.backbone_model.backbone, 'out_channels') else 256
+        from torchvision.models.detection.rpn import RPNHead
+        self.backbone_model.rpn.head = RPNHead(in_channels, num_anchors)
+        print(f"   ✅ RPN head rebuilt to match {num_anchors} anchors per location")
         
     def _enhance_feature_pyramid(self):
         """Enhance FPN with GroupNorm for better stability"""

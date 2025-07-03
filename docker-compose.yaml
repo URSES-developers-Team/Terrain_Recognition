@@ -1,0 +1,9 @@
+services:
+  terrain-model:
+    build: .
+    runtime: nvidia
+    volumes:
+      - ./data:/workspace/data
+    environment:
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    shm_size: 50g

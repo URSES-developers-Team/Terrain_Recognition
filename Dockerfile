@@ -3,35 +3,27 @@ FROM pytorch/pytorch:2.7.0-cuda11.8-cudnn9-runtime
 # Set working directory
 WORKDIR /workspace
 
-# Install system dependencies for OpenCV and ultralytics
+# Install system dependencies required for OpenCV and albumentations
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
+    libgl1 \
+    libglib2.0-0
 
-# Install dependencies
+# Install Python dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Copy only necessary source files
+# Copy source code
 COPY src/ src/
 
-# Copy only essential data (geojson) - this is small
+# Copy essential data file (geojson only)
 COPY data/xView_train.geojson data/xView_train.geojson
 
-# Copy environment config
+# Copy environment variables
 COPY .env .
 
-# Set environment variables for Python
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV TORCH_USE_NNPACK=0
-
-# Create volume mount points
+# Declare volume mount for external data
 VOLUME ["/workspace/data"]
 
+# Default command
 CMD ["/bin/bash"]

@@ -6,6 +6,7 @@ from data import preprocessing, dataset
 from config import *
 from models import get_model
 import torch.optim as optim
+from datetime import datetime
 
 
 def get_scheduler(optimizer, scheduler_type, total_epochs, step_size, gamma):
@@ -178,7 +179,8 @@ def main():
                 map_metric.update(predictions, targets)
         epoch_map = map_metric.compute()
         val_maps.append(float(epoch_map["map"]))
-        print(f"[Epoch {epoch+1}] Train Loss: {avg_train_loss:.4f} | Val mAP: {val_maps[-1]:.4f}")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+        print(f"[Epoch {epoch+1}] Train Loss: {avg_train_loss:.4f} | Val mAP: {val_maps[-1]:.4f} | {timestamp}")
         
         # Step the scheduler
         if scheduler is not None:

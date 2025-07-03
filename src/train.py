@@ -10,7 +10,7 @@ from models import get_model
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default=MODEL_NAME, 
-                       choices=["base", "enhanced", "ultimate"])
+                       choices=["base", "enhanced", "ultimate", "apex"])
     args = parser.parse_args()
     model_name = args.model
 
@@ -48,8 +48,8 @@ def main():
     # 3. Model
     num_classes = len(class_mapping) + 1
     
-    # For ultimate model, we need to pass class_counts
-    if model_name == "ultimate":
+    # For ultimate/apex models, we need to pass class_counts
+    if model_name in ["ultimate", "apex"]:
         # Compute class counts from the preprocessed data
         class_counts = {}
         for class_id in tiled_df["class_id"].unique():
@@ -61,9 +61,14 @@ def main():
         print(f"   Least common: {min(class_counts.values())} samples")
         print(f"   Imbalance ratio: {max(class_counts.values())/min(class_counts.values()):.1f}:1")
         
-        # Import ultimate model directly to avoid preprocessing duplication
-        from models.faster_rcnn.ultimate import UltimateFasterRCNN
-        model = UltimateFasterRCNN(num_classes, class_counts, DEVICE)
+        if model_name == "ultimate":
+            # Import ultimate model directly to avoid preprocessing duplication
+            from models.faster_rcnn.ultimate import UltimateFasterRCNN
+            model = UltimateFasterRCNN(num_classes, class_counts, DEVICE)
+        elif model_name == "apex":
+            # Import apex model (simplified version)
+            from models.faster_rcnn.apex_simplified import ApexFasterRCNN
+            model = ApexFasterRCNN(num_classes, class_counts, DEVICE, enable_amp=True)
     else:
         model = get_model(model_name, num_classes)
     
@@ -72,21 +77,21 @@ def main():
     # 4. Optimizer
     params = [p for p in model.parameters() if p.requires_grad]
     
-    # Use model-specific learning rate recommendations for ultimate model
-    if model_name == "ultimate":
+    # Use model-specific learning rate recommendations for ultimate/apex models
+    if model_name in ["ultimate", "apex"]:
         recommendations = model.get_training_recommendations()
         lr = recommendations['learning_rate']
         wd = recommendations['weight_decay']
-        print(f"📚 Using Ultimate model recommendations: LR={lr}, WD={wd}")
+        print(f"📚 Using {model_name.title()} model recommendations: LR={lr}, WD={wd}")
     else:
         lr = LEARNING_RATE
         wd = WEIGHT_DECAY
         
     optimizer = torch.optim.SGD(params, lr=lr, momentum=MOMENTUM, weight_decay=wd)
     
-    # Add learning rate scheduler for ultimate model
+    # Add learning rate scheduler for ultimate/apex models
     scheduler = None
-    if model_name == "ultimate":
+    if model_name in ["ultimate", "apex"]:
         recommendations = model.get_training_recommendations()
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, 
@@ -94,6 +99,10 @@ def main():
             gamma=recommendations['gamma']
         )
         print(f"📈 Added StepLR scheduler: step_size={recommendations['step_size']}, gamma={recommendations['gamma']}")
+        
+        # For Apex model, also print AMP status
+        if model_name == "apex":
+            print(f"⚡ Mixed-Precision Training: {'Enabled' if model.enable_amp else 'Disabled'}")
 
     # 5. Training loop
     train_losses, val_maps = [], []
@@ -105,20 +114,26 @@ def main():
             images = [img.to(DEVICE) for img in images]
             targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
             optimizer.zero_grad()
-            loss_dict = model(images, targets)
-            total_loss = sum(loss_dict.values())
             
-            # Check for NaN/Inf in loss before backward pass
-            if torch.isnan(total_loss) or torch.isinf(total_loss):
-                print(f"Warning: NaN/Inf loss detected, skipping batch. Loss: {total_loss}")
-                continue
+            # Use enhanced training for Apex model
+            if model_name == "apex":
+                loss_dict, total_loss = model.train_step(images, targets, optimizer)
+            else:
+                loss_dict = model(images, targets)
+                total_loss = sum(loss_dict.values())
                 
-            total_loss.backward()
+                # Check for NaN/Inf in loss before backward pass
+                if torch.isnan(total_loss) or torch.isinf(total_loss):
+                    print(f"Warning: NaN/Inf loss detected, skipping batch. Loss: {total_loss}")
+                    continue
+                    
+                total_loss.backward()
+                
+                # Gradient clipping to prevent exploding gradients
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+                
+                optimizer.step()
             
-            # Gradient clipping to prevent exploding gradients
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
-            
-            optimizer.step()
             epoch_loss += total_loss.item()
         avg_train_loss = epoch_loss / len(train_loader)
         train_losses.append(avg_train_loss)

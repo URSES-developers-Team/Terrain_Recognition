@@ -11,9 +11,6 @@ def get_model(model_name, num_classes):
     """
     Model factory for programmatic model creation.
     
-    Note: For CLI training, use train_yolo.py or train.py directly.
-    This factory is for inference, evaluation, and testing scripts.
-    
     Supported model names:
     
     FasterRCNN:
@@ -29,11 +26,17 @@ def get_model(model_name, num_classes):
     # FasterRCNN models
     if model_name == "ultimate":
         # Ultimate model should be created directly in train.py to avoid preprocessing duplication
-        # This path is for inference/evaluation scripts only
         raise ValueError(
             "Ultimate model requires class_counts parameter. "
             "For training, use: python src/train.py --model ultimate. "
             "For inference, import UltimateFasterRCNN directly and provide class_counts."
+        )
+    elif model_name == "apex":
+        # Apex model should be created directly in train.py to avoid preprocessing duplication
+        raise ValueError(
+            "Apex model requires class_counts parameter. "
+            "For training, use: python src/train.py --model apex. "
+            "For inference, import ApexFasterRCNN directly and provide class_counts."
         )
     
     if model_name == "enhanced":

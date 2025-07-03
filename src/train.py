@@ -180,7 +180,7 @@ def main():
         epoch_map = map_metric.compute()
         val_maps.append(float(epoch_map["map"]))
         timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-        print(f"[Epoch {epoch+1}] Train Loss: {avg_train_loss:.4f} | Val mAP: {val_maps[-1]:.4f} | {timestamp}")
+        print(f"[Epoch {epoch+1} / {NUM_EPOCHS}] Train Loss: {avg_train_loss:.4f} | Val mAP: {val_maps[-1]:.4f} | {timestamp}")
         
         # Step the scheduler
         if scheduler is not None:

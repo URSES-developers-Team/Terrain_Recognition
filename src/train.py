@@ -51,8 +51,8 @@ def main():
     df, class_mapping = preprocessing.remap_class_ids(df)
     df = preprocessing.filter_images_with_annotations(df, TRAIN_IMAGES_DIR)
     # For testing: limit to 3 images
-    # unique_images = df["image_id"].unique()[:3]
-    # df = df[df["image_id"].isin(unique_images)].copy()
+    unique_images = df["image_id"].unique()[:3]
+    df = df[df["image_id"].isin(unique_images)].copy()
 
     tiled_df = preprocessing.tile_dataset(df, TRAIN_IMAGES_DIR, N_TILES, TILED_IMAGES_DIR)
     df_train, df_val = preprocessing.split_train_val(tiled_df, test_size=VAL_SPLIT, random_state=RANDOM_SEED)
@@ -95,8 +95,8 @@ def main():
             from models.faster_rcnn.ultimate import UltimateFasterRCNN
             model = UltimateFasterRCNN(num_classes, class_counts, DEVICE.type)
         elif model_name == "apex":
-            # Import apex model (simplified version)
-            from models.faster_rcnn.apex_simplified import ApexFasterRCNN
+            # Import apex model 
+            from models.faster_rcnn.apex import ApexFasterRCNN
             model = ApexFasterRCNN(num_classes, class_counts, DEVICE.type, enable_amp=True)
     else:
         model = get_model(model_name, num_classes)

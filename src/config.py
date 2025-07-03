@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import torch
 
-load_dotenv(dotenv_path="/Volumes/T7 Shield/rps_github/terrarian_recognition/.env")
+load_dotenv()
 
 # Data paths
 DATASET_DIR = os.path.join("data", "dataset") 
@@ -23,8 +23,8 @@ INFERENCE_OUTPUT_DIR = os.getenv("INFERENCE_OUTPUT_DIR", default_output_dir)
 
 # Hyperparameters
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", 4))
-NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 15))
-LEARNING_RATE = float(os.getenv("LEARNING_RATE", 0.01))
+NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 150))
+LEARNING_RATE = float(os.getenv("LEARNING_RATE", 0.0005))
 MOMENTUM = float(os.getenv("MOMENTUM", 0.9))
 WEIGHT_DECAY = float(os.getenv("WEIGHT_DECAY", 0.0005))
 N_TILES = int(os.getenv("N_TILES", 10))
@@ -36,8 +36,14 @@ FOCAL_ALPHA = float(os.getenv("FOCAL_ALPHA", 1.0))
 FOCAL_GAMMA = float(os.getenv("FOCAL_GAMMA", 2.0))
 ELU_ALPHA = float(os.getenv("ELU_ALPHA", 1.0))
 
-NUM_WORKERS = int(os.getenv("NUM_WORKERS", 4))
+NUM_WORKERS = int(os.getenv("NUM_WORKERS", 2))  
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() 
                     #   else "mps" if torch.backends.mps.is_available()
                       else "cpu")
+
+# Scheduler config
+SCHEDULER_TYPE = os.getenv("SCHEDULER_TYPE", "cosine")  # Options: 'cosine', 'cyclic', 'step'
+SCHEDULER_STEP_SIZE = int(os.getenv("SCHEDULER_STEP_SIZE", 15))  # For StepLR
+SCHEDULER_GAMMA = float(os.getenv("SCHEDULER_GAMMA", 0.5))      # For StepLR
+SCHEDULER_TOTAL_EPOCHS = int(os.getenv("SCHEDULER_TOTAL_EPOCHS", NUM_EPOCHS))  # For Cosine/Cyclic

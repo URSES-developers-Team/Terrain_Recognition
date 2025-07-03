@@ -5,6 +5,34 @@ import utils
 from data import preprocessing, dataset
 from config import *
 from models import get_model
+import torch.optim as optim
+
+
+def get_scheduler(optimizer, scheduler_type, total_epochs, step_size, gamma):
+    """
+    Returns a learning rate scheduler based on config.
+    Args:
+        optimizer: The optimizer instance.
+        scheduler_type: 'cosine', 'cyclic', or 'step'.
+        total_epochs: Total number of epochs (for cosine/cyclic).
+        step_size: Step size for StepLR.
+        gamma: Decay factor for StepLR.
+    """
+    if scheduler_type == 'cosine':
+        # Cosine Annealing with warm restarts
+        print(f"📈 Using CosineAnnealingLR: T_max={total_epochs}")
+        return optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_epochs, eta_min=1e-6)
+    elif scheduler_type == 'cyclic':
+        # CyclicLR: cycles between base_lr and max_lr
+        print(f"📈 Using CyclicLR: base_lr=1e-5, max_lr=5e-4, step_size_up={total_epochs//4}")
+        return optim.lr_scheduler.CyclicLR(
+            optimizer, base_lr=1e-5, max_lr=5e-4, step_size_up=total_epochs//4, mode='triangular2'
+        )
+    elif scheduler_type == 'step':
+        print(f"📈 Using StepLR: step_size={step_size}, gamma={gamma}")
+        return optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+    else:
+        raise ValueError(f"Unknown scheduler_type: {scheduler_type}")
 
 
 def main():
@@ -64,11 +92,11 @@ def main():
         if model_name == "ultimate":
             # Import ultimate model directly to avoid preprocessing duplication
             from models.faster_rcnn.ultimate import UltimateFasterRCNN
-            model = UltimateFasterRCNN(num_classes, class_counts, DEVICE)
+            model = UltimateFasterRCNN(num_classes, class_counts, DEVICE.type)
         elif model_name == "apex":
             # Import apex model (simplified version)
             from models.faster_rcnn.apex_simplified import ApexFasterRCNN
-            model = ApexFasterRCNN(num_classes, class_counts, DEVICE, enable_amp=True)
+            model = ApexFasterRCNN(num_classes, class_counts, DEVICE.type, enable_amp=True)
     else:
         model = get_model(model_name, num_classes)
     
@@ -93,13 +121,14 @@ def main():
     scheduler = None
     if model_name in ["ultimate", "apex"]:
         recommendations = model.get_training_recommendations()
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, 
-            step_size=recommendations['step_size'], 
-            gamma=recommendations['gamma']
+        scheduler = get_scheduler(
+            optimizer,
+            scheduler_type=SCHEDULER_TYPE,
+            total_epochs=SCHEDULER_TOTAL_EPOCHS,
+            step_size=SCHEDULER_STEP_SIZE,
+            gamma=SCHEDULER_GAMMA
         )
-        print(f"📈 Added StepLR scheduler: step_size={recommendations['step_size']}, gamma={recommendations['gamma']}")
-        
+        print(f"📈 Scheduler type: {SCHEDULER_TYPE}")
         # For Apex model, also print AMP status
         if model_name == "apex":
             print(f"⚡ Mixed-Precision Training: {'Enabled' if model.enable_amp else 'Disabled'}")
